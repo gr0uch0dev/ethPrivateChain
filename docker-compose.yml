@@ -1,0 +1,91 @@
+version: "3"
+
+services:
+  priv-bootnode:
+    hostname: priv-bootnode
+    environment:
+      - nodekeyhex=08f0e1dee5c1b4645f3331a566009e41a4514b6cd28656d63d0449ecf812812b #Needs to be fix, so that the miners know the resulting enode id
+    build:
+      context: ./bootnode
+    ports:
+      - 30301:30301/udp
+    networks:
+      chainnet:
+        ipv4_address: 172.25.0.101 # The miners need to know the IP address later on
+
+  priv-dev-miner-1:
+    hostname: priv-dev-miner-1
+    depends_on:
+      - priv-bootnode
+    environment:
+      - address=0x5ad53e470617c9a63c6550eb1526870c39d0f1f8 #derived from the private key which is passed in the args
+      - bootnodeId=76a8171707eca17647a47ca99ffd348927dfa60102792ea349a25d5192e61855be83b786e376276a306afcceea4ffd1c9c77e4370b417efc39f328a0d068004c #derived from the nodekeyhex of the bootnode
+      - bootnodeIp=172.25.0.101
+    build:
+      context: ./miner
+      args:
+        privatekey : 227608c996105c73e44eec820be20f53af479dc4b6225a6cdc0d622d164d84c6
+        password: groucho
+    ports:
+      -  8544:8544
+    volumes:
+      - eth-data-1:/root/.ethash
+
+    networks:
+      chainnet:
+        ipv4_address: 172.25.0.102
+
+  priv-dev-node:
+     hostname: priv-dev-node
+     depends_on:
+       - priv-dev-miner-1
+     environment:
+       - address=0x29c488fd1acc371e4712d2b237ae89ee38ef7687 #derived from the private key which is passed in the args
+       - bootnodeId=76a8171707eca17647a47ca99ffd348927dfa60102792ea349a25d5192e61855be83b786e376276a306afcceea4ffd1c9c77e4370b417efc39f328a0d068004c #derived from the nodekeyhex of the bootnode
+       - bootnodeIp=172.25.0.101
+     build:
+       context: ./node
+       args:
+         privatekey: bb82f6d9d2afecab314e3a37108f2b8c061813023fb3daf423984d051d739a2d
+         password: groucho
+     ports:
+       - 8545:8545
+     healthcheck:
+       test: wget http://localhost:8545
+       interval: 2s
+       timeout: 5s
+       retries: 30
+     volumes:
+      - eth-data-2:/root/.ethash
+     networks:
+       chainnet:
+         ipv4_address: 172.25.0.110
+
+  priv-dev-miner-smart:
+     hostname: priv-dev-miner-smart
+     depends_on:
+       - priv-dev-miner-1
+     environment:
+       - minerNodeHttp=172.25.0.102
+       - minerNodePort=8544
+     build:
+       context: ./miner-only-when-transactions
+     ports:
+       - 8543:8543
+     tty: true
+     networks:
+       chainnet:
+
+networks:
+  chainnet:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 172.25.0.0/24
+
+
+
+
+volumes:
+  eth-data-1:
+  eth-data-2:

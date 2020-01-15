@@ -1,0 +1,1 @@
+geth --bootnodes "enode://$bootnodeId@$bootnodeIp:30301" --networkid "6660001" --verbosity=4  --syncmode=full --gasprice "0" --etherbase $address --unlock $address --password ~/.accountpassword --allow-insecure-unlock --rpc --rpcaddr "0.0.0.0" --rpcport "8544" --rpcapi "eth,web3,net,admin,debug,db,miner,personal" --rpccorsdomain "*" --mine
